@@ -8,53 +8,133 @@ HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Cloudflare Bypasser UI</title>
+    <title>Cloudflare Bypass Tool</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e4e4e7;
             padding: 20px;
             min-height: 100vh;
         }
         .container { 
-            max-width: 900px; 
+            max-width: 1200px; 
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         h1 { 
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 32px;
+            color: #f4f4f5;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
         }
         .subtitle {
-            color: #666;
-            margin-bottom: 30px;
+            color: #a1a1aa;
             font-size: 14px;
+            margin-top: 5px;
+        }
+        .card {
+            background: #0f172a;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #3b82f6;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a1a1aa;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #e4e4e7;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        button {
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: #1e293b;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
         }
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #eee;
+            gap: 8px;
+            margin-bottom: 20px;
         }
         .tab {
-            padding: 12px 24px;
-            background: none;
-            border: none;
-            color: #666;
+            padding: 10px 20px;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px 6px 0 0;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 500;
-            border-bottom: 3px solid transparent;
             transition: all 0.2s;
         }
         .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+            background: #1e293b;
+            border-bottom: 2px solid #3b82f6;
         }
         .tab-content {
             display: none;
@@ -62,337 +142,234 @@ HTML_TEMPLATE = """
         .tab-content.active {
             display: block;
         }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        input, textarea, select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        textarea {
-            font-family: 'Monaco', 'Menlo', monospace;
-            resize: vertical;
-            min-height: 100px;
-        }
-        button {
-            padding: 14px 28px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        button:hover {
-            background: #5568d3;
-            transform: translateY(-1px);
-        }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        .result h3 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 16px;
-        }
-        pre {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 16px;
-            border-radius: 6px;
-            overflow-x: auto;
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
             font-size: 13px;
-            line-height: 1.5;
+            color: #94a3b8;
         }
-        .loading {
-            display: inline-block;
+        .spinner {
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
             width: 20px;
             height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-left: 10px;
-            vertical-align: middle;
+            display: inline-block;
+            margin-right: 8px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .error {
-            color: #e74c3c;
-            background: #fee;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-        .header-input {
-            display: grid;
-            grid-template-columns: 1fr 2fr auto;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .add-header {
-            background: #10b981;
-            padding: 8px 16px;
-            font-size: 14px;
-        }
-        .remove-header {
-            background: #ef4444;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>☁️ Cloudflare Bypasser</h1>
-        <div class="subtitle">Bypass Cloudflare protection with ease</div>
-        
+        <header>
+            <h1>☁️ Cloudflare Bypass Tool</h1>
+            <div class="subtitle">Bypass Cloudflare protection and extract cookies, HTML content, or mirror requests</div>
+        </header>
+
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('cookies')">Get Cookies</button>
-            <button class="tab" onclick="switchTab('html')">Get HTML</button>
-            <button class="tab" onclick="switchTab('mirror')">Mirror Request</button>
+            <div class="tab active" onclick="switchTab('cookies')">Get Cookies</div>
+            <div class="tab" onclick="switchTab('html')">Get HTML</div>
+            <div class="tab" onclick="switchTab('mirror')">Mirror Request</div>
         </div>
-        
+
         <!-- Cookies Tab -->
         <div id="cookies-tab" class="tab-content active">
-            <div class="form-group">
-                <label>Target URL</label>
-                <input type="url" id="cookies-url" placeholder="https://example.com" required>
+            <div class="card">
+                <h2>Extract Cloudflare Cookies</h2>
+                <div class="info-box">
+                    This endpoint extracts Cloudflare clearance cookies from a protected URL.
+                </div>
+                <form id="cookies-form">
+                    <div class="form-group">
+                        <label>Target URL</label>
+                        <input type="url" id="cookies-url" placeholder="https://example.com" required>
+                    </div>
+                    <button type="submit" id="cookies-btn">
+                        <span>Get Cookies</span>
+                    </button>
+                </form>
+                <div id="cookies-result" class="result"></div>
             </div>
-            <div class="form-group">
-                <label>Proxy (Optional)</label>
-                <input type="text" id="cookies-proxy" placeholder="http://user:pass@proxy:port">
-            </div>
-            <button onclick="getCookies()">Get Cookies <span id="cookies-loading" class="loading" style="display:none"></span></button>
-            <div id="cookies-result"></div>
         </div>
-        
+
         <!-- HTML Tab -->
         <div id="html-tab" class="tab-content">
-            <div class="form-group">
-                <label>Target URL</label>
-                <input type="url" id="html-url" placeholder="https://example.com" required>
+            <div class="card">
+                <h2>Extract HTML Content</h2>
+                <div class="info-box">
+                    This endpoint returns the full HTML content after bypassing Cloudflare protection.
+                </div>
+                <form id="html-form">
+                    <div class="form-group">
+                        <label>Target URL</label>
+                        <input type="url" id="html-url" placeholder="https://example.com" required>
+                    </div>
+                    <button type="submit" id="html-btn">
+                        <span>Get HTML</span>
+                    </button>
+                </form>
+                <div id="html-result" class="result"></div>
             </div>
-            <div class="form-group">
-                <label>Proxy (Optional)</label>
-                <input type="text" id="html-proxy" placeholder="http://user:pass@proxy:port">
-            </div>
-            <button onclick="getHTML()">Get HTML <span id="html-loading" class="loading" style="display:none"></span></button>
-            <div id="html-result"></div>
         </div>
-        
+
         <!-- Mirror Tab -->
         <div id="mirror-tab" class="tab-content">
-            <div class="form-group">
-                <label>Endpoint Path</label>
-                <input type="text" id="mirror-path" placeholder="/api/data" required>
-            </div>
-            <div class="form-group">
-                <label>HTTP Method</label>
-                <select id="mirror-method">
-                    <option>GET</option>
-                    <option>POST</option>
-                    <option>PUT</option>
-                    <option>DELETE</option>
-                    <option>PATCH</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Target Hostname</label>
-                <input type="text" id="mirror-hostname" placeholder="example.com" required>
-            </div>
-            <div class="form-group">
-                <label>Headers</label>
-                <div id="headers-container">
-                    <div class="header-input">
-                        <input type="text" placeholder="Header name" class="header-name">
-                        <input type="text" placeholder="Header value" class="header-value">
-                        <button class="remove-header" onclick="removeHeader(this)" style="display:none">×</button>
-                    </div>
+            <div class="card">
+                <h2>Mirror HTTP Request</h2>
+                <div class="info-box">
+                    Mirror any HTTP request through the bypass server. The server will handle Cloudflare automatically.
                 </div>
-                <button class="add-header" onclick="addHeader()">+ Add Header</button>
+                <form id="mirror-form">
+                    <div class="form-group">
+                        <label>HTTP Method</label>
+                        <select id="mirror-method">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                            <option value="PATCH">PATCH</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Target Hostname</label>
+                        <input type="text" id="mirror-hostname" placeholder="example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>API Path</label>
+                        <input type="text" id="mirror-path" placeholder="/api/data" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Request Body (JSON, optional)</label>
+                        <input type="text" id="mirror-body" placeholder='{"key": "value"}'>
+                    </div>
+                    <div class="form-group">
+                        <label>Proxy URL (optional)</label>
+                        <input type="text" id="mirror-proxy" placeholder="http://user:pass@proxy:port">
+                    </div>
+                    <button type="submit" id="mirror-btn">
+                        <span>Send Request</span>
+                    </button>
+                </form>
+                <div id="mirror-result" class="result"></div>
             </div>
-            <div class="form-group">
-                <label>Request Body (JSON, optional)</label>
-                <textarea id="mirror-body" placeholder='{"key": "value"}'></textarea>
-            </div>
-            <button onclick="mirrorRequest()">Send Request <span id="mirror-loading" class="loading" style="display:none"></span></button>
-            <div id="mirror-result"></div>
         </div>
     </div>
-    
+
     <script>
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
             event.target.classList.add('active');
             document.getElementById(tab + '-tab').classList.add('active');
         }
-        
-        function addHeader() {
-            const container = document.getElementById('headers-container');
-            const div = document.createElement('div');
-            div.className = 'header-input';
-            div.innerHTML = `
-                <input type="text" placeholder="Header name" class="header-name">
-                <input type="text" placeholder="Header value" class="header-value">
-                <button class="remove-header" onclick="removeHeader(this)">×</button>
-            `;
-            container.appendChild(div);
-        }
-        
-        function removeHeader(btn) {
-            btn.parentElement.remove();
-        }
-        
-        async function getCookies() {
-            const url = document.getElementById('cookies-url').value;
-            const proxy = document.getElementById('cookies-proxy').value;
-            const loading = document.getElementById('cookies-loading');
+
+        // Cookies Form
+        document.getElementById('cookies-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('cookies-btn');
             const result = document.getElementById('cookies-result');
+            const url = document.getElementById('cookies-url').value;
             
-            if (!url) {
-                result.innerHTML = '<div class="error">Please enter a URL</div>';
-                return;
-            }
-            
-            loading.style.display = 'inline-block';
-            result.innerHTML = '';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Processing...';
+            result.classList.remove('show');
             
             try {
-                let endpoint = `/cookies?url=${encodeURIComponent(url)}`;
-                if (proxy) endpoint += `&proxy=${encodeURIComponent(proxy)}`;
-                
-                const response = await fetch(endpoint);
+                const response = await fetch(`/api/cookies?url=${encodeURIComponent(url)}`);
                 const data = await response.json();
                 
-                result.innerHTML = `
-                    <div class="result">
-                        <h3>✓ Cookies Retrieved</h3>
-                        <pre>${JSON.stringify(data, null, 2)}</pre>
-                    </div>
-                `;
+                result.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                result.classList.add('show');
             } catch (error) {
-                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                result.innerHTML = '<pre class="error">Error: ' + error.message + '</pre>';
+                result.classList.add('show');
             } finally {
-                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Get Cookies</span>';
             }
-        }
-        
-        async function getHTML() {
-            const url = document.getElementById('html-url').value;
-            const proxy = document.getElementById('html-proxy').value;
-            const loading = document.getElementById('html-loading');
+        });
+
+        // HTML Form
+        document.getElementById('html-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('html-btn');
             const result = document.getElementById('html-result');
+            const url = document.getElementById('html-url').value;
             
-            if (!url) {
-                result.innerHTML = '<div class="error">Please enter a URL</div>';
-                return;
-            }
-            
-            loading.style.display = 'inline-block';
-            result.innerHTML = '';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Processing...';
+            result.classList.remove('show');
             
             try {
-                let endpoint = `/html?url=${encodeURIComponent(url)}`;
-                if (proxy) endpoint += `&proxy=${encodeURIComponent(proxy)}`;
+                const response = await fetch(`/api/html?url=${encodeURIComponent(url)}`);
+                const text = await response.text();
                 
-                const response = await fetch(endpoint);
-                const html = await response.text();
-                
-                result.innerHTML = `
-                    <div class="result">
-                        <h3>✓ HTML Retrieved (${html.length} characters)</h3>
-                        <pre>${html.substring(0, 1000)}...</pre>
-                    </div>
-                `;
+                result.innerHTML = '<pre>' + text.substring(0, 2000) + (text.length > 2000 ? '\\n\\n... (truncated)' : '') + '</pre>';
+                result.classList.add('show');
             } catch (error) {
-                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                result.innerHTML = '<pre class="error">Error: ' + error.message + '</pre>';
+                result.classList.add('show');
             } finally {
-                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Get HTML</span>';
             }
-        }
-        
-        async function mirrorRequest() {
-            const path = document.getElementById('mirror-path').value;
-            const method = document.getElementById('mirror-method').value;
-            const hostname = document.getElementById('mirror-hostname').value;
-            const body = document.getElementById('mirror-body').value;
-            const loading = document.getElementById('mirror-loading');
+        });
+
+        // Mirror Form
+        document.getElementById('mirror-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('mirror-btn');
             const result = document.getElementById('mirror-result');
             
-            if (!path || !hostname) {
-                result.innerHTML = '<div class="error">Please enter path and hostname</div>';
-                return;
-            }
+            const method = document.getElementById('mirror-method').value;
+            const hostname = document.getElementById('mirror-hostname').value;
+            const path = document.getElementById('mirror-path').value;
+            const body = document.getElementById('mirror-body').value;
+            const proxy = document.getElementById('mirror-proxy').value;
             
-            loading.style.display = 'inline-block';
-            result.innerHTML = '';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Processing...';
+            result.classList.remove('show');
             
             try {
-                const headers = {'x-hostname': hostname};
-                
-                // Collect custom headers
-                document.querySelectorAll('.header-input').forEach(div => {
-                    const name = div.querySelector('.header-name').value.trim();
-                    const value = div.querySelector('.header-value').value.trim();
-                    if (name && value) headers[name] = value;
-                });
+                const headers = {
+                    'x-hostname': hostname
+                };
+                if (proxy) headers['x-proxy'] = proxy;
                 
                 const options = {
-                    method: method,
-                    headers: headers
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        method,
+                        path,
+                        headers,
+                        body: body ? JSON.parse(body) : null
+                    })
                 };
                 
-                if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-                    options.headers['Content-Type'] = 'application/json';
-                    options.body = body;
-                }
+                const response = await fetch('/api/mirror', options);
+                const data = await response.json();
                 
-                const response = await fetch(path, options);
-                const data = await response.text();
-                
-                result.innerHTML = `
-                    <div class="result">
-                        <h3>✓ Response (${response.status} ${response.statusText})</h3>
-                        <pre>${data.substring(0, 2000)}${data.length > 2000 ? '...' : ''}</pre>
-                    </div>
-                `;
+                result.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                result.classList.add('show');
             } catch (error) {
-                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                result.innerHTML = '<pre class="error">Error: ' + error.message + '</pre>';
+                result.classList.add('show');
             } finally {
-                loading.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Send Request</span>';
             }
-        }
+        });
     </script>
 </body>
 </html>
@@ -402,7 +379,44 @@ HTML_TEMPLATE = """
 def index():
     return render_template_string(HTML_TEMPLATE)
 
-# Proxy all other requests to the main server
-@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
-def proxy(path):
-    url = f
+@app.route('/api/cookies')
+def get_cookies():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({'error': 'URL parameter is required'}), 400
+    
+    try:
+        response = requests.get(f'http://localhost:8000/cookies?url={url}')
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/html')
+def get_html():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({'error': 'URL parameter is required'}), 400
+    
+    try:
+        response = requests.get(f'http://localhost:8000/html?url={url}')
+        return response.text, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/api/mirror', methods=['POST'])
+def mirror_request():
+    data = request.json
+    method = data.get('method', 'GET')
+    path = data.get('path', '/')
+    headers = data.get('headers', {})
+    body = data.get('body')
+    
+    try:
+        url = f'http://localhost:8000{path}'
+        response = requests.request(method, url, headers=headers, json=body)
+        return jsonify(response.json())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=80, debug=False)
