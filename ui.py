@@ -1,8 +1,12 @@
 from flask import Flask, render_template_string, request, jsonify
 import requests
 import json
+import os
 
 app = Flask(__name__)
+
+# Get the bypass server URL from environment or default to localhost
+BYPASS_SERVER = os.environ.get('BYPASS_SERVER_URL', 'http://localhost:8000')
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -165,13 +169,28 @@ HTML_TEMPLATE = """
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .status-ok {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>☁️ Cloudflare Bypass Tool</h1>
-            <div class="subtitle">Bypass Cloudflare protection and extract cookies, HTML content, or mirror requests</div>
+            <div class="subtitle">
+                Bypass Cloudflare protection and extract cookies, HTML content, or mirror requests
+                <span class="status-badge status-ok">Server: {{ server_url }}</span>
+            </div>
         </header>
 
         <div class="tabs">
@@ -377,7 +396,7 @@ HTML_TEMPLATE = """
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template_string(HTML_TEMPLATE, server_url=BYPASS_SERVER)
 
 @app.route('/api/cookies')
 def get_cookies():
@@ -386,7 +405,7 @@ def get_cookies():
         return jsonify({'error': 'URL parameter is required'}), 400
     
     try:
-        response = requests.get(f'http://localhost:8000/cookies?url={url}')
+        response = requests.get(f'{BYPASS_SERVER}/cookies?url={url}', timeout=30)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -398,8 +417,8 @@ def get_html():
         return jsonify({'error': 'URL parameter is required'}), 400
     
     try:
-        response = requests.get(f'http://localhost:8000/html?url={url}')
-        return response.text, 200, {'Content-Type': 'text/plain'}
+        response = requests.get(f'{BYPASS_SERVER}/html?url={url}', timeout=60)
+        return response.text, response.status_code, {'Content-Type': 'text/html; charset=utf-8'}
     except Exception as e:
         return str(e), 500
 
@@ -412,11 +431,81 @@ def mirror_request():
     body = data.get('body')
     
     try:
-        url = f'http://localhost:8000{path}'
-        response = requests.request(method, url, headers=headers, json=body)
+        url = f'{BYPASS_SERVER}{path}'
+        response = requests.request(method, url, headers=headers, json=body, timeout=30)
         return jsonify(response.json())
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Direct proxy endpoints for external access (Cloudflare Workers, etc.)
+@app.route('/cookies')
+def proxy_cookies():
+    """Direct proxy to bypass server cookies endpoint - for external API access"""
+    url = request.args.get('url')
+    if not url:
+        return jsonify({'error': 'URL parameter is required'}), 400
+    
+    try:
+        # Call the internal bypass server on localhost:8000
+        response = requests.get(f'{BYPASS_SERVER}/cookies', params={'url': url}, timeout=30)
+        
+        # Return the response with proper headers
+        return response.text, response.status_code, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Request timeout - bypass server took too long'}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': 'Cannot connect to bypass server'}), 503
+    except Exception as e:
+        return jsonify({'error': f'Bypass server error: {str(e)}'}), 500
+
+@app.route('/html')
+def proxy_html():
+    """Direct proxy to bypass server html endpoint - for external API access"""
+    url = request.args.get('url')
+    if not url:
+        return 'URL parameter is required', 400
+    
+    try:
+        # Call the internal bypass server on localhost:8000
+        response = requests.get(f'{BYPASS_SERVER}/html', params={'url': url}, timeout=60)
+        
+        # Return the HTML with proper headers
+        return response.text, response.status_code, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'x-cf-bypasser-status': 'proxied'
+        }
+    except requests.exceptions.Timeout:
+        return 'Request timeout - bypass server took too long', 504
+    except requests.exceptions.ConnectionError:
+        return 'Cannot connect to bypass server', 503
+    except Exception as e:
+        return f'Bypass server error: {str(e)}', 500
+
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    try:
+        # Try to ping the bypass server
+        response = requests.get(f'{BYPASS_SERVER}/health', timeout=5)
+        bypass_status = 'ok' if response.ok else 'error'
+    except:
+        bypass_status = 'unreachable'
+    
+    return jsonify({
+        'status': 'ok',
+        'ui_server': 'running',
+        'bypass_server': BYPASS_SERVER,
+        'bypass_status': bypass_status
+    })
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=False)
+    port = int(os.environ.get('PORT', 80))
+    app.run(host='0.0.0.0', port=port, debug=False)
